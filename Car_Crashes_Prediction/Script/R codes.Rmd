@@ -1,0 +1,82 @@
+---
+title: "R-code"
+author: "Jianghong Man"
+date: "1/14/2020"
+output: html_document
+---
+
+knitr::opts_chunk$set(out.width='1000px',dpi=200,message=FALSE,warning=FALSE)\
+\
+library(lubridate)\
+library(doMC)\
+registerDoMC(2)\
+library(ggplot2)\
+library(dplyr)\
+library(ggthemes)\
+library(RColorBrewer)\
+library(skimr)\
+library(rgdal)\
+library(viridis)\
+\
+df <- read.csv('Traffic_Crashes_-_Crashes.csv', sep = ',', stringsAsFactors = F)\
+df$CRASH_MONTH_NAME <- sapply(df$CRASH_MONTH, function(x) month.name[x])\
+df$CRASH_DATE_YEAR <- sapply(df$CRASH_DATE, function(x) strsplit(x," ")[[1]][1])\
+df$CRASH_DATE_YEAR <- as.Date(df$CRASH_DATE_YEAR, format="%m/%d/%Y")\
+df$CRASH_DATE_YEAR_NUM <- lubridate::year(df$CRASH_DATE_YEAR)\
+\
+df_monthly_crash <- data.frame(df %>% group_by(CRASH_DATE_YEAR_NUM, CRASH_MONTH_NAME) %>% summarise(count=n()))\
+df_monthly_crash1 <- df_monthly_crash[df_monthly_crash$CRASH_DATE_YEAR_NUM>2016,]\
+\
+df_daily_crash <- data.frame(df %>% group_by(CRASH_DATE_YEAR) %>% summarise(count=n()))\
+df_daily_crash$month <- lubridate::month(df_daily_crash$CRASH_DATE_YEAR)\
+df_daily_crash$month_name <- sapply(df_daily_crash$month, function(x) month.name[x])\
+\
+df %>% skim()\
+\
+df_monthly_crash1 %>% \
+  mutate(CRASH_MONTH_NAME_ORDERED = factor(CRASH_MONTH_NAME, month.name)) %>% \
+  ggplot(aes(x= CRASH_MONTH_NAME_ORDERED,y=count)) + geom_boxplot() + \
+  theme_fivethirtyeight(12) + \
+  ylim(0,12e3)\
+\
+df_daily_crash1 %>% \
+  mutate(\
+    month_name_ordered = factor(month_name, month.name),\
+    current_year = lubridate::year(CRASH_DATE_YEAR)) %>% \
+  ggplot(aes(x=month_name_ordered ,y=count)) + \
+  geom_boxplot(alpha=.25) + \
+  geom_jitter(aes(color=factor(current_year)), size=1) +\
+  theme_fivethirtyeight(12) + labs(title="daily crash count") +\
+  scale_color_brewer(name="", palette='Paired')\
+\
+df_daily_crash %>% \
+  mutate(\
+    month_name_ordered = factor(month_name, month.name),\
+    current_year = lubridate::year(CRASH_DATE_YEAR)) %>% \
+  ggplot(aes(x=month_name_ordered ,y=count)) + \
+  geom_boxplot(alpha=.25) + \
+  geom_jitter(aes(color=factor(current_year)), size=1) +\
+  theme_fivethirtyeight(12) + labs(title="daily crash count") +\
+  scale_color_brewer(name="", palette='Paired') +\
+  facet_wrap(~factor(current_year), ncol=1) +\
+  ylim(0,600)\
+\
+df_monthly_crash_2 <- data.frame(df %>% group_by(CRASH_DATE_YEAR_NUM, CRASH_MONTH) %>% summarise(count=n()))\
+df_monthly_crash_2$Date <- paste0(df_monthly_crash_2$CRASH_DATE_YEAR_NUM,'-',df_monthly_crash_2$CRASH_MONTH,'-01')\
+df_monthly_crash_2$Date <- as.Date(df_monthly_crash_2$Date)\
+df_monthly_crash_2 <- df_monthly_crash_2[-c(1:29), ]\
+df_monthly_crash_2$current_year <- lubridate::year(df_monthly_crash_2$Date)\
+\
+df_monthly_crash_2  %>%\
+  ggplot(aes(x=Date ,y=count)) + \
+  geom_line(size=2, alpha=.25) +\
+  geom_point(size=2) +\
+  theme_fivethirtyeight(12) + labs(title="Monthly crash count")\
+\
+df_daily_crash1 <- df_daily_crash[df_daily_crash$CRASH_DATE_YEAR > '2016-12-31',]\
+\
+df_daily_crash1 %>% ggplot(aes(x=CRASH_DATE_YEAR,y=count)) + \
+  geom_line(size=2, alpha=.25) + geom_point(size=2) +\
+  theme_fivethirtyeight(12) + labs(title="Daily crash count")\
+\
+}
