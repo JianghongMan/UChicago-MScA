@@ -1,0 +1,109 @@
+---
+title: "Week4_JianghongMan"
+author: "Jianghong Man"
+date: "10/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1 Data
+
+```{r}
+dataPath <- "/Users/nimo/Desktop/31007/4/"
+LinearModelData <- read.csv(file=paste(dataPath,"ResidualAnalysisProjectData_1.csv",sep="/"))
+head(LinearModelData)
+```
+
+```{r}
+plot(LinearModelData$Input,LinearModelData$Output)
+```
+
+# 2 Fitting linear model
+
+```{r}
+Estimated.LinearModel <- lm(Output ~ Input,data=LinearModelData)
+names(Estimated.LinearModel)
+```
+
+## 2.1 Object lm()
+
+```{r}
+print(Estimated.LinearModel)
+Estimated.LinearModel.res = resid(Estimated.LinearModel)
+```
+
+```{r}
+plot(Estimated.LinearModel.res, ylab="Residuals", xlab=" ", main=" ") 
+```
+
+## 2.2 Object of summary
+
+```{r}
+summary(Estimated.LinearModel)
+```
+
+```{r}
+names(summary(Estimated.LinearModel))
+summary(Estimated.LinearModel)$sigma
+summary(Estimated.LinearModel)$sigma^2
+```
+
+```{r}
+sigmaSquared.byVar
+sigmaSquared.bySum
+```
+
+# 3 Analysis of residuals
+
+## 3.1 Residuals of the model
+
+```{r}
+Estimated.Residuals <- Estimated.LinearModel$residuals
+plot(LinearModelData$Input, Estimated.Residuals)
+```
+
+```{r}
+Probability.Density.Residuals <- density(Estimated.Residuals)
+plot(Probability.Density.Residuals, ylim = c(0, 0.5))
+lines(Probability.Density.Residuals$x, dnorm(Probability.Density.Residuals$x, 
+    mean = mean(Estimated.Residuals), sd = sd(Estimated.Residuals)))
+```
+
+## 3.2 Clustering the sample
+
+```{r}
+c(Left.Mean = mean(Estimated.Residuals[Estimated.Residuals < 0]), 
+  Right.Mean = mean(Estimated.Residuals[Estimated.Residuals > 0]))
+```
+
+Separate the given sample into 2 subsamples: one, for which the residuals are below zero and another, for which they are above zero. Create variable Unscrambled.Selection.Sequence estimating switching between the two subsamples (1 corresponds to the positive residual case and 0 corresponds to the negative residual case).
+
+```{r}
+first.row <- seq(length(Estimated.Residuals))
+first.row
+```
+
+```{r}
+second.row <- c()
+for (residual in Estimated.Residuals) {
+  if(residual < 0)  {second.row <- c(second.row,0)}
+  else {second.row <- c(second.row,1)}
+}
+print(second.row)
+```
+
+```{r}
+Unscrambled.Selection.Sequence <- cbind(first.row,second.row)
+head(Unscrambled.Selection.Sequence,30)
+```
+
+
+
+
+
+
+
+

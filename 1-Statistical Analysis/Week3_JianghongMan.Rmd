@@ -1,0 +1,49 @@
+---
+title: "Week3_JianghongMan"
+author: "Jianghong Man"
+date: "10/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Import the library
+
+```{r}
+dataPath <- "/Users/nimo/Desktop/31007/3/HW3/"
+dat <- read.table(paste(dataPath,'Week3_Test_Sample.csv',sep = '/'), header=TRUE)
+```
+
+The sample dat has the following format:
+
+dat$x[1] - mean value of normal distribution;
+dat$x[2] - standard deviation of normal distribution;
+dat$x[3] - intensity of exponential distribution;
+datx[4] : datx[503] sample from uniform distribution on [0.1].
+
+### Sample datNorm from normal distribution with mean dat$x[1] and standard deviation dat$x[2]
+
+```{r}
+datNorm <- qnorm(dat$x[4:503], dat$x[1], dat$x[2])
+```
+
+### Sample datExp from exponential distribution with intensity dat$x[3].
+
+```{r}
+datExp <- qexp(dat$x[4:503], rate = dat$x[3])
+```
+
+### Collect all results
+
+```{r}
+res<-cbind(datNorm=datNorm,datExp=datExp)
+```
+
+### Write the result to a file
+
+```{r}
+write.table(res, file = paste(dataPath,'result.csv',sep = '/'), row.names = F)
+```
+

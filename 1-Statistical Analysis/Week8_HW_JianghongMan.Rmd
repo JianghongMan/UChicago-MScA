@@ -1,0 +1,145 @@
+---
+title: "Week8_HW"
+author: "Jianghong Man"
+date: "11/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+dataPath <- "/Users/nimo/Desktop/31007/8/"
+test_dat <- read.table(paste(dataPath,'Week8_Test_Sample.csv',sep = '/'), header=TRUE)
+```
+
+```{r}
+test_dat
+```
+
+```{r}
+plot(Output~Treatment, data=test_dat, pch=19,col="black")
+```
+
+
+
+
+```{r}
+summaryByGroup<-aggregate(Output~Treatment,data=test_dat,FUN=summary)
+
+means<-cbind(Means=summaryByGroup$Output[,4],Sizes=aggregate(Output~Treatment,data=test_dat,FUN=length)$Output)
+rownames(means)<-as.character(summaryByGroup$Treatment)
+means
+```
+
+```{r}
+Group1.TreatmentA<-subset(test_dat,test_dat$Treatment=="A")
+Group1.TreatmentA
+```
+
+```{r}
+summary(Group1.TreatmentA)
+```
+
+```{r}
+mean(Group1.TreatmentA[,1])
+```
+
+```{r}
+model1<-lm(Output ~ Treatment,data=test_dat)
+```
+
+```{r}
+model1Summary<-summary(model1)
+model1ANOVA<-anova(model1)
+```
+
+```{r}
+model1Summary$coefficients
+```
+
+```{r}
+model1Summary$df
+```
+
+```{r}
+c(Sigma=model1Summary$sigma,Rsquared=model1Summary$r.squared)
+```
+
+```{r}
+model1ANOVA
+```
+
+```{r}
+plot(model1$residuals)
+```
+
+```{r}
+test<-test_dat
+test$x1<-test$Treatment=="B"
+test$x2<-test$Treatment=="C"
+test$x3<-test$Treatment=="D"
+test
+```
+
+```{r}
+test.model.full<-lm(test~x1+x2+x3, data=test)
+test.model.null<-lm(test~1,data=test)
+anova(test.model.null,test.model.full)
+```
+
+
+```{r}
+grand.mean<-mean(test$Output)
+create.vector.of.means<-function(my.group.data) {
+  rep(my.group.data[1],my.group.data[2])
+}
+group.mean<-unlist(apply(means,1,create.vector.of.means))
+```
+
+```{r}
+grand.mean
+```
+
+```{r}
+group.mean
+```
+
+```{r}
+SST<-sum((test_dat$Output-grand.mean)^2)
+SSE<-sum((test_dat$Output-group.mean)^2)
+SSM<-sum((group.mean-grand.mean)^2)
+```
+
+```{r}
+c(SST=SST,SSE=SSE,SSM=SSM)
+```
+
+```{r}
+sum((group.mean-grand.mean)^2)
+```
+
+```{r}
+anova(model1)
+```
+
+```{r}
+model.matrix(model1)
+```
+
+```{r}
+model2<-lm(Output~Treatment-1,data=test_dat)
+summary(model2)
+```
+
+```{r}
+anova(model2)
+```
+
+
+
+
+
+
+

@@ -1,0 +1,98 @@
+---
+title: "Week5_HW_JianghongMan"
+author: "Jianghong Man"
+date: "11/1/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1 Data
+
+```{r}
+dataPath <- "/Users/nimo/Desktop/31007/5/HW5/"
+dat <- read.table(paste(dataPath,'Week5_Test_Sample.csv',sep = '/'), header=TRUE)
+```
+
+Fit linear model GeneralModel, analyze residuals and separate the mixed models. Fit separate linear models mSteep and mFlat. Variables GeneralModel,mSteep and mFlat are objects of class “lm”. Create list variable resand save it in file result.rds. .
+
+```{r}
+dat = data.frame(Input=dat$Input,Output=dat$Output)
+```
+
+```{r}
+GeneralModel<-lm(Output~Input,dat)
+GeneralModel$coefficients
+```
+
+```{r}
+clusteringParabola = (GeneralModel$fitted.values-mean(dat$Output))^2
+```
+
+```{r}
+Unscrambling.Sequence.Steeper.var = ((dat$Output-mean(dat$Output))^2)>=(GeneralModel$fitted.values-mean(dat$Output))^2
+```
+
+```{r}
+nSample<-length(dat$Input)
+Subsample.Steeper.var<-data.frame(steeperInput.var=dat$Input,steeperOutput.var=rep(NA,nSample))
+Subsample.Flatter.var<-data.frame(flatterInput.var=dat$Input,flatterOutput.var=rep(NA,nSample))
+```
+
+```{r}
+Subsample.Steeper.var[Unscrambling.Sequence.Steeper.var,2]<-dat[Unscrambling.Sequence.Steeper.var,2]
+Subsample.Flatter.var[!Unscrambling.Sequence.Steeper.var,2]<-dat[!Unscrambling.Sequence.Steeper.var,2]
+```
+
+# Check the first 10 rows
+
+```{r}
+head(cbind(dat,Subsample.Steeper.var,Subsample.Flatter.var),10)
+```
+
+```{r}
+plot(dat$Input,
+     (dat$Output-mean(dat$Output))^2,
+     type="p",pch=19,ylab="Squared Deviations")
+points(dat$Input,clusteringParabola,pch=19,col="red")
+points(dat$Input[Unscrambling.Sequence.Steeper.var],
+       (dat$Output[Unscrambling.Sequence.Steeper.var]-
+          mean(dat$Output))^2,
+       pch=19,col="blue")
+points(dat$Input[!Unscrambling.Sequence.Steeper.var],
+       (dat$Output[!Unscrambling.Sequence.Steeper.var]-
+          mean(dat$Output))^2,
+       pch=19,col="green")
+```
+
+```{r}
+excludeMiddle<-(dat$Input<=mean(dat$Input)-0)|
+  (dat$Input>=mean(dat$Input)+0)
+matplot(dat$Input[excludeMiddle],cbind(dat$Output[excludeMiddle],
+                                       Subsample.Steeper.var$steeperOutput.var[excludeMiddle],
+                                       Subsample.Flatter.var$flatterOutput.var[excludeMiddle]),
+        type="p",col=c("black","green","blue"),
+        pch=16,ylab="Separated Subsamples")
+```
+
+```{r}
+mSteep = lm(formula = steeperOutput.var ~ steeperInput.var, data = Subsample.Steeper.var[excludeMiddle,])
+summary(mSteep)
+```
+
+```{r}
+mFlat = lm(formula = flatterOutput.var ~ flatterInput.var, data = Subsample.Flatter.var[excludeMiddle,])
+summary(mFlat)
+```
+
+```{r}
+res <- list( GeneralModel = GeneralModel,mSteep = mSteep,mFlat = mFlat)
+```
+
+```{r}
+saveRDS(res, file = paste(dataPath,'result.rds',sep = '/'))
+```
+
+

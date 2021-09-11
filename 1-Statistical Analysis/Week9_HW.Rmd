@@ -1,0 +1,61 @@
+---
+title: "Week_9_HW"
+author: "Jianghong Man"
+date: "12/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+dataPath <-"/Users/nimo/Desktop/31007/9/"
+test_dat <- read.table(paste(dataPath,'Week9_Test_Sample.csv',sep = '/'), header=TRUE)
+head(test_dat)
+```
+
+```{r}
+Data.Levels<-as.numeric(test_dat[1,])
+Project.Data<-test_dat[-1]
+head(Project.Data)
+```
+
+```{r}
+matplot(Project.Data, type="l")
+```
+
+```{r}
+#PCA
+PCA.Yields<-princomp(Project.Data)
+PCA.Yields
+summary(PCA.Yields)
+names(PCA.Yields)
+plot(PCA.Yields)
+```
+
+```{r}
+PCA.Yields$center
+PCA.Yields$loadings
+PCA.Yields$scores
+pcaLoadings<-PCA.Yields$loadings[,1:3]
+pcaLoading0<-PCA.Yields$center
+pcaFactors<-PCA.Yields$scores[,1:3]
+pcaFactors[,1]
+```
+
+```{r}
+centeredData<-t(apply(Project.Data,1,function(z) z-pcaLoading0))
+head(centeredData)
+```
+
+```{r}
+reconstructLoading1<-lm(pcaFactors[,1]~centeredData)$coefficients[-1]
+```
+
+```{r}
+cbind(reconstructLoading1,pcaLoadings[,1])
+summary(reconstructLoading1)
+```
+
+
