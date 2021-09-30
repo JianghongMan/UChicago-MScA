@@ -1,0 +1,62 @@
+---
+title: "Seminar2"
+author: "Jianghong Man"
+date: "01/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+dataPath <- "/Users/nimo/Desktop/31010/2/Seminar/"
+test_data <- read.table(paste(dataPath,'test_sample.csv',sep = '/'), header=TRUE)
+head(test_data,10)
+```
+
+```{r}
+# Which dice to choose 
+# choose the dice 20
+```
+
+```{r}
+# Maximum Likelihood Estimate
+# choose the max of the data
+mle <- max(test_data$x)
+```
+
+```{r}
+# Method of Moments Estimate
+# 2 times the mean of data
+mme <- mean(test_data$x)*2
+```
+
+```{r}
+# p-value 
+p.value <- (mle/20)^(length(test_data$x))
+```
+
+```{r}
+#reject
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

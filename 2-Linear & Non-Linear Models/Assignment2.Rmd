@@ -1,0 +1,88 @@
+---
+title: "Assignment2"
+author: "Jianghong Man"
+date: "01/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+dataPath = "/Users/nimo/Desktop/31010/2/Assignment/"
+testFunction<-readRDS(file=paste(dataPath,"MScA_Nonlinear_Models_Week2_TestFunction.rds",sep="/"))$Week2_Test_Function
+```
+
+```{r}
+testFunction(0,622)
+```
+
+```{r}
+myOptimizer<-function(startValue,Function_To_Optimize,Epsilon=0.0001,projectID){
+  
+  
+  startValue = startValue
+  Function_To_Optimize = Function_To_Optimize
+  repeat_bool = TRUE
+  
+  while (repeat_bool) {
+    dx <- genD(func = Function_To_Optimize, x = startValue, method = "Richardson",
+               method.args = list(), projectID)$D[1]
+    endValue <- startValue - (Function_To_Optimize(startValue, projectID)/dx)
+    if (abs(endValue - startValue) < Epsilon){
+      repeat_bool = FALSE
+      return (endValue)
+    }
+    startValue <- endValue
+  }
+}
+```
+
+```{r}
+uniroot <- uniroot(testFunction,lower=-5,upper=+1,projectID=622)
+```
+
+```{r}
+myOptimizer(-5,testFunction,Epsilon=.0001,projectID=622)
+```
+
+```{r}
+Start.Value <- -5
+```
+
+```{r}
+my.root <- myOptimizer(-5,testFunction,Epsilon=.0001,projectID=622)
+```
+
+```{r}
+uniroot$root
+```
+
+```{r}
+uniroot.lower <- -5
+```
+
+```{r}
+uniroot.upper <- 1
+```
+
+```{r}
+res <- list(Start.Value = Start.Value,
+            my.Optimizer.root =my.root,
+            uniroot.root = uniroot$root,
+            uniroot.lower = uniroot.lower,
+            uniroot.upper = uniroot.upper)
+```
+
+```{r}
+write.table(res, file = paste(dataPath,'result.csv',sep = '/'), row.names = F)
+```
+
+
+
+
+
+
+
+

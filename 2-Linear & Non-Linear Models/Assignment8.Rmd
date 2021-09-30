@@ -1,0 +1,57 @@
+---
+title: "Assignment4"
+author: "Jianghong Man"
+date: "02/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+dataPath = "/Users/nimo/Desktop/31010/4/Assignment/"
+train_dat <- read.table(paste(dataPath,'Week4_Test_Sample_Train.csv',sep = '/'), header=TRUE)
+test_dat <- read.table(paste(dataPath,'Week4_Test_Sample_Test.csv',sep = '/'), header=TRUE)
+```
+
+```{r}
+head(train_dat)
+```
+
+```{r}
+head(test_dat)
+```
+
+```{r}
+glm.probit <- glm(Output~Predictor1 + Predictor2, 
+                  data = train_dat, 
+                  family = binomial(link = "probit"))
+
+glm.logit <- glm(Output~Predictor1 + Predictor2, 
+                 data = train_dat, 
+                 family = binomial(link = "logit"))
+
+```
+```{r}
+Predicted.glm.probit <- predict(glm.probit, test_dat, type="response")
+Predicted.Output.probit <- ifelse(Predicted.glm.probit > 0.5, 1, 0)
+
+Predicted.glm.logit <- predict(glm.logit, test_dat, type="response")
+Predicted.Output.logit <- ifelse(Predicted.glm.logit > 0.5, 1, 0)
+```
+
+```{r}
+res <- list(Predicted.Output.logit=Predicted.Output.logit,
+            Predicted.Output.probit=Predicted.Output.probit)
+```
+
+```{r}
+write.table(res, file = paste(dataPath,'result.csv',sep = '/'), row.names = F)
+```
+
+
+
+
+
+

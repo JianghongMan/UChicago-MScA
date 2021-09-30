@@ -1,0 +1,133 @@
+---
+title: "Seminar4"
+author: "Jianghong Man"
+date: "2/2/2021"
+output: html_document
+---
+
+```{r}
+dataPath <-"/Users/wenjingchen/Desktop/杂/Uchicago/WinterQuarter/31010-LinearNonLinear/Seminar"
+dat <- readRDS(paste(dataPath,'test3_sample',sep = '/'))
+```
+
+
+```{r}
+library(invgamma)
+library(MASS)
+copulaType = c('clayton')
+#X <- rank(dat$predictor)/length(dat)
+#Y <- rank(dat$output)/length(dat)
+X <- dat$predictor
+Y <- dat$output
+df <- data.frame(X,Y)
+Fx <- pexp(X, 1, rate = 0.4)
+Fy <- plnorm(Y, meanlog = 4.0, sd = 0.2)
+dfF <- cbind(Fx,Fy)
+
+#Fx <- rank(Fx)/length(Fx)
+#Fy <- rank(Fy)/length(Fy)
+#dfF <- data.frame(Fx,Fy)
+#empCopulaX <- enacopula(df,method = c("mde.gamma.KS"))
+empCopula <- cbind(Fx, Fy)
+plot(empCopula)
+
+par(mfrow=c(1,1))
+k <- kde2d(X, Y, n = 100)
+image(k, col = topo.colors(20))
+
+# Should be Clayton copula
+
+#Clayton.Copula.Object<-claytonCopula(param=0.95,dim=2)
+#Clayton.Copula.Object
+#Clayton.Copula.Object <- rotCopula(Clayton.Copula.Object,flip = TRUE)
+#parameter <- getTheta(Clayton.Copula.Object)
+#Clayton.Copula.fit<-fitCopula(Clayton.Copula.Object, 
+#                               pobs(df, ties.method = "average"), 
+#                               method = "ml",
+#                               optim.method = "BFGS", 
+#                               optim.control = list(maxit=1000))
+#parameter <- as.double(Clayton.Copula.fit@estimate)
+#Clayton.Copula.fit@estimate
+
+gaussian_cond_dist = function(theta, alpha, u) {
+  pnorm(qnorm(alpha)*sqrt(1-theta**2)+theta*qnorm(u))
+  }
+
+frank_cond_dist = function(theta, alpha, u) {
+  -1/theta * log(exp(1-alpha*(1-exp(-theta))/(exp(-theta)*u))+alpha*(1-exp(-theta*u)))
+}
+
+clayton_cond_dist = function(theta, alpha, u) {
+  ((alpha**(-theta/(1+theta)) - 1)*(u**(-theta)) +1) ** (-1/theta)
+}
+
+```
+
+library(np)
+dfFX <- data.frame(X,Fx)
+dfFY <- data.frame(Y,Fy)
+bw.cdf <- npudistbw(~X+Fx,data=dfFX)
+copula <- npcopula(bws=bw.cdf,data=dfFX)
+Clayton.Copula.fit<-fitCopula(copula, 
+                               pobs(dfFX, ties.method = "average"), 
+                               method = "ml",
+                               optim.method = "BFGS", 
+                               optim.control = list(maxit=1000))
+parameter <- as.double(Clayton.Copula.fit@estimate)
+
+
+```{r}
+
+#Clayton.Copula.Object<-claytonCopula(param=0.05,dim=2)
+#clayton_quantile_0.05 <- clayton_cond_dist(parameter, 0.05, pobs(df, ties.method = "average")[,1])
+#quantileLow <- as.double(clayton_quantile_0.05)
+
+Clayton.Copula.Object<-claytonCopula(param=1,dim=2)
+Clayton.Copula.fit<-fitCopula(Clayton.Copula.Object, 
+                               dfF, 
+                               method = "ml",
+                               optim.control = list(maxit=1000))
+parameter <- as.double(Clayton.Copula.fit@estimate)
+
+#do not know the 
+clayton_quantile_0.05 <- clayton_cond_dist(parameter, 0.05, dfF[,1])
+quantileLow <- as.double(clayton_quantile_0.05)
+quantileLow <- qlnorm(quantileLow, meanlog = 4, sd = 0.2)
+#ecdf(dfF)(.05)
+
+
+clayton_quantile_0.5 <- clayton_cond_dist(parameter, 0.5, dfF[,1])
+quantileMid <- as.double(clayton_quantile_0.5)
+quantileMid <- qlnorm(quantileMid, meanlog = 4, sd = 0.2)
+
+clayton_quantile_0.95 <- clayton_cond_dist(parameter, 0.95,dfF[,1])
+quantileHigh <- as.double(clayton_quantile_0.95)
+quantileHigh <- qlnorm(quantileHigh, meanlog = 4, sd = 0.2)
+```
+
+
+
+
+
+```{r}
+res <- list(copulaType = copulaType,
+            quantileLow=quantileLow,
+            quantileMid=quantileMid,
+            quantileHigh=quantileHigh
+            )
+saveRDS(res, file = paste(dataPath,'result.rds',sep = '/'))
+
+```
+
+
+```{r}
+
+
+```
+
+
+
+```{r}
+
+
+```

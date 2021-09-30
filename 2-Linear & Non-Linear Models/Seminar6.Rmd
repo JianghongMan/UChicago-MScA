@@ -1,0 +1,377 @@
+---
+title: "Week6-Seminar"
+author: "Jianghong Man"
+date: "2/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r library1}
+library(MASS)
+library(pscl)
+library(AER)
+```
+
+### 1 Problem Description
+Business analytics group of a manufacturing company is asked to investigate causes of malfunctions in technological process at one of the plants that result in significant increase of cost for the end product of the business.
+One of suspected reasons for malfunctions is deviation of temperature in burning zone from optimal levels. The sample in the provided file contains times of malfunctions in seconds since the start of measurement and records of temperature.
+
+### 2 Data
+File MScA_31010_LinearNonLinear_MalfunctionData.csv contains time stamps of malfunction events expressed in seconds and temperature readings at the time of each event.
+Temperature sensor updates readings once a minute.
+
+Read and prepare the data.
+
+```{r data}
+dataPath = "C:\\Users\\rsure\\Desktop\\Uchicago\\LNL\\Seminar Project\\Week6"
+dta<-read.csv(file=paste(dataPath,"MScA_31010_LinearNonLinear_MalfunctionData.csv",sep="/"))
+head(dta,10)
+```
+Note that temperature corresponding to the first seven events remains the same because they occurred within one minute.
+
+### 2.1 Data exploration
+Create counting process, explore cumulative intensity.
+
+Counting process is a step function that jumps by 1 at every time when event occurs.
+
+
+```{r count data}
+counting_process_old<-as.data.frame(cbind(Time=dta$Time,
+                                      Count=1:length(dta$Time)))
+counting_process<-data.frame(Time=dta$Time,
+                             Count=1:length(dta$Time))
+head(counting_process,10)
+head(counting_process_old,10)
+```
+
+```{r plot}
+plot(counting_process,type="s")
+```
+
+
+The counting process trajectory looks pretty smooth and grows steadily. This may mean that malfunctions are caused by a persistent rather than episodic problem.
+
+### 2.2 Cumulative intensity
+Explore cumulative intensity of the process.
+
+Cumulative intensity is calculated as Λ(t)=Ntt, where Nt is the number of events during the time interval [0,t].
+For this project t is sequence of time stamps and Nt is event count up until t.
+
+
+```{r cumint}
+
+
+mean(counting_process$Count)
+mean(counting_process$Time)
+mean(counting_process$Count/counting_process$Time)
+length(counting_process$Count)
+counting_process$Time[length(counting_process$Count)]
+max(counting_process$Time)
+
+with(counting_process,plot(Time,Count/Time,type="l",
+                           ylab="Cumulative Intensity"))
+with(counting_process,
+     abline(h=Count[length(Count)]/Time[length(Time)]))
+with(counting_process,abline(h=mean(Count/Time),col="red"))
+```
+
+The two horizontal lines on the graph are at the mean cumulative intensity and last cumulative intensity levels.
+
+The cumulative intensity seems to converge to a stable level.
+
+```{r last count}
+with(counting_process,
+     c(Last.Intensity=Count[length(Count)]/Time[length(Time)],
+       Mean.Intensity=mean(Count/Time)))
+```
+2.3 Minute data
+Create data frame 'minute_data' containing one-minute event counts and temperatures.
+
+For example, look at the first rows of the data:
+
+
+```{r minute}
+head(dta,250)
+```
+
+Time column of the data is in seconds.
+First 7 rows (events) occurred during the first minute: time stamps are between 0 and 60.
+Temperature during the first minute was 96.3233199°F.
+The following 15 rows are in the second minute and the second minute temperature is 100.4779092°F.
+
+Create data frame 'minute_data'. Each row corresponds to one minute of observations, it contains count of events during that minute and the temperature.
+
+Some minutes may not contain any events. Rows corresponding to such minutes should be excluded from the data frame.
+
+(Skipped Code)
+
+```{r library}
+library(dplyr)
+```
+```{r minutedata}
+temp = dta %>% add_count(Temperature,sort = FALSE,name = "Count") %>% summarise(Temperature,Count)
+
+
+head(temp,50)
+temp2 = distinct(temp,Temperature,Count=Count)
+
+head(temp2)
+
+minute = seq(1,nrow(temp2),by=1)
+minute_data = cbind(minute,temp2)
+
+minute_data
+
+
+```
+
+
+Then first 2 rows of dataframe 'minute_data' should look like this:
+```{r head}
+head(minute_data,2)
+```
+
+```{r dim}
+dim(minute_data)
+
+```
+Select row of the minute_data corresponding to the minute: 207
+
+```{r s207}
+minute_data[244,]
+
+##1.minute_data$count from the selected row : Ans : 8
+(minute_data.count = minute_data$Count[244])
+#2.minute_data$temperature from the selected row : Ans 101.2123
+(minute_data.temperature = minute_data$Temperature[244])
+
+
+```
+
+
+
+### 3 Analysis of over-dispersion
+Check intensity (counts) of the process for over-dispersion using null model, i.e. no predictors.
+
+
+```{r fit nullmodels}
+
+glm.poission.null.fit = glm(Count~1,family=poisson,data=minute_data)
+glm.nb.null.fit = glm.nb(Count~1,data=minute_data)
+```
+
+```{r summary nullmodels}
+
+summary(glm.poission.null.fit)
+summary(glm.nb.null.fit)
+```
+#### 3.1 Method 1. Quick and rough method based on deviance of Poisson regression
+Use the method based on comparison of the deviance and the number of degrees of freedom shown in the output of generalized linear model for Poisson regression. Calculate approximate confidence interval centered at the theoretical mean value of the deviance statistic and bounds of ±1.96 standard deviations from it, and check if observed deviance belongs to it.
+Enter the deviance, upper, lower bounds and the conclusion about overdispersion ("Yes"/"no") in the quiz, answering questions 3-6.
+
+(Skipped Code)
+
+```{r deviance}
+Test.Deviance.Overdispersion.Poisson<-function(Model){
+  Dev<-Model$deviance
+  Deg.Fred<-Model$df.residual
+   overd = (Dev-Deg.Fred)/sqrt(2*Deg.Fred)
+  ((Dev-Deg.Fred)/sqrt(2*Deg.Fred)>-1.96)&((Dev-Deg.Fred)/sqrt(2*Deg.Fred)<1.96)
+} 
+
+Test.Deviance.Overdispersion.Poisson(glm.poission.null.fit)
+
+#Method 1. Poisson Deviance:
+#3. deviance :
+
+(glm.p.deviance = glm.poission.null.fit$deviance)
+(glm.p.df = glm.poission.null.fit$df.residual)
+
+
+  mean_deviance = (glm.p.deviance - glm.p.df )
+
+#4. Lower confidence level of mean value of the deviance:
+  
+   #(mean_deviance_low = mean_deviance - 1.96 * sqrt(2*glm.p.df) )
+  
+    (mean_deviance_low = glm.p.df - 1.96 * sqrt(2*glm.p.df))
+
+#5. Upper confidence level of mean value of the deviance:
+
+  #(mean_deviance_high = mean_deviance + 1.96 )
+  (mean_deviance_high = glm.p.df + 1.96 * sqrt(2*glm.p.df))
+
+#6. Conclusion about overdispersion (Yes/No): Yes
+
+```
+
+#### 3.2 Method 2. Regression test by Cameron-Trivedi
+Use regression-based tests for over-dispersion by Cameron-Trivedi implemented in dispersiontest() from library AER.
+
+Apply dispersiontest() to the glm model fitted in the previous section.
+
+Enter the test statistic and its p-value together with the conclusion of this test (overdispersion "Yes"/"No") answering questions 7-9 of the quiz.
+Make your conclusion by using level of 4.5% for the p-value.
+
+
+
+(Skipped Code)
+```{r dispersion}
+
+dspr_test = dispersiontest(glm.poission.null.fit,alternative = "two.sided")
+dspr_test
+
+#7. Test statistic: Ans : 4.269698
+
+(dspr_statistic = dspr_test$statistic)
+
+#8. Test p-value:  Ans : 1.957376e-05
+
+(dspr_pvalue = dspr_test$p.value)
+
+#9. Cameron-Trivedi test. Conclusion about overdispersion (Yes/No): Yes
+#dispersion of 8.69 and p-value of 0 indicates null hypothesis can be rejected that there is overdispersion
+
+
+```
+
+#### 3.3 Method 3. Test against negative binomial distribution
+Use method based on negative binomial regression.
+
+Apply glm.nb() from MASS to one-minute counts to fit a null negative binomial model.
+Then use odTest() from library pscl to test with level of 4.5% if the data can be described by Poisson distribution (no over-dispersion) or not (over-dispersion).
+Enter the odTest test statistic, its p-value and the conclusion (overdispersion "Yes"/"No") answering questions 10-12 of the quiz.
+
+Hint. Note that odTest() does not return any values, just silently prints the output, which may be rounded. Learn how to replace odTest() with your own version of that function, for example, my_odTest() and return the parameters you need to enter into the quiz.
+
+(Skipped Code)
+
+```{r myodtest}
+my_odTest <- function(glmobj,
+                   alpha=.05,
+                   digits=max(3,getOption("digits")-3))
+{
+  if(!inherits(glmobj, "negbin"))
+    stop("this function only works for objects of class negbin\n")
+
+  if(alpha>1 | alpha<0)
+    stop("invalid value for alpha\n")
+  
+  poissonGLM <- glm(formula=eval(glmobj$call$formula),
+                    data=eval(glmobj$call$data),
+                    family="poisson")
+  ## require(stats)
+  llhPoisson <- logLik(poissonGLM)
+  llhNB <- logLik(glmobj)
+  
+  d <- 2*(llhNB - llhPoisson)
+
+  ## n.b., distribution of test-statistics is non-standard
+  ## see Cameron and Trivedi 1998 p78
+  critval <- qchisq(1-(2*alpha), df = 1)
+  pval <- pchisq(d, df = 1, lower.tail=FALSE)/2
+  
+
+  cat("Likelihood ratio test of H0: Poisson, as restricted NB model:\n")
+  cat("n.b., the distribution of the test-statistic under H0 is non-standard\n")
+  cat("e.g., see help(odTest) for details/references\n\n")
+  
+  cat(paste("Critical value of test statistic at the alpha=",
+            round(alpha,digits),
+            "level:",
+            round(critval,digits),
+            "\n"))
+  cat(paste("Chi-Square Test Statistic = ",
+            round(d,digits),
+            "p-value =",
+            format.pval(pval,digits=digits),
+            "\n"))
+  
+  #invisible(NULL)
+  
+
+  
+  rval <- list(test.statistic = round(d,digits = digits),
+               p.value = format.pval(pval,digits = digits),
+	             alpha = round(alpha,digits),
+	             level = round(critval,digits)
+	             )
+  class(rval) <- "htest"
+  return(rval)
+}
+
+```
+
+```{r odtest}
+
+#odTest(glm.nb.null.fit,alpha =0.05)
+#odTest(glm.nb.null.fit,alpha =0.045)
+my_odt = my_odTest(glm.nb.null.fit,alpha =0.045)
+
+(odt_statistic = my_odt$test.statistic)
+(odt_pvalue = my_odt$p.value)
+
+
+
+#10. Test statistic: 1099.385
+
+#11. Test p-value: 0 
+
+#12. Negative binomial regression based test. Conclusion about overdispersion (Yes/No): Yes
+
+```
+
+4 Predictiongintensity with temperature
+Fit negative binomial and Poisson regressions to the count response with the temperature predictor, using minute_data.
+In the test shiny application enter the last 3 answers of the quiz:
+
+deviance_Pois, DF_Pois - deviance and number of degrees of freedom of the Poisson regression model
+deviance_NBinom, DF_NBinom - deviance and number of degrees of freedom of the negative binomial regression model
+model - either "poisson" or "nbinom"; the model that should be selected.
+
+
+```{r fit nullmodels}
+
+glm.poission.temp.fit = glm(Count~Temperature,family=poisson,data=minute_data)
+glm.nb.temp.fit = glm.nb(Count~Temperature,data=minute_data)
+
+```
+```{r sumfit}
+summary(glm.poission.temp.fit)
+summary(glm.nb.temp.fit)
+dispersiontest(glm.poission.temp.fit)
+```
+
+```{r predtempcount}
+
+
+
+#13. Deviance of the Poisson regression model:
+
+(glm_poisson_deviance = glm.poission.temp.fit$deviance)
+
+#14. Number of degrees of freedom of the Poisson regression model:
+
+(glm_poisson_df = glm.poission.temp.fit$df.residual)
+
+#15. Deviance of the negative binomial regression model:
+
+(glm_nb_deviance = glm.nb.temp.fit$deviance)
+
+#16. Number of degrees of freedom of the negative binomial regression model:
+
+(glm_nb_df = glm.nb.temp.fit$df.residual)
+
+#17. Model that you select:Poisson
+
+#No dispersion found ,residual deviance almost identical. so select Poisson
+
+```
+
+### Seminar results
+
+Select row of the data frame minute_data corresponding to the minute shown at the top of the page in the test application.
+Answering the first 2 questions in the quiz enter minute_data$count and minute_data$temperature from the selected row.
+

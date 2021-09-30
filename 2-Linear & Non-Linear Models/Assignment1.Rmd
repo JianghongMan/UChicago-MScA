@@ -1,0 +1,237 @@
+---
+title: "Assignment1"
+author: "Jianghong Man"
+date: "01/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Prepare the Data
+
+```{r}
+dataPath <- "/Users/nimo/Desktop/31010/1/Assignment/"
+Linear_Model_Data <- read.table(paste(dataPath,'Week1_Test_Sample.csv',sep = '/'), header=TRUE)
+# Linear_Model_Data<-read.table(file=paste(dataPath,"Week1_Test_Sample.csv",sep="/"),header=TRUE,sep=",")
+head(Linear_Model_Data,10)
+```
+
+```{r}
+Linear.Model.Data.Frame <- as.data.frame(Linear_Model_Data)
+```
+
+# Fit Linear model Using lm() and glm()
+
+```{r}
+# Estimate the model using lm() and glm()
+lm_fit <- lm(Output~Input1+Input2+Input3, data=Linear.Model.Data.Frame)
+glm_fit <- glm(Output~Input1+Input2+Input3,family=gaussian(link="identity"),
+               data=Linear.Model.Data.Frame)
+```
+
+```{r}
+# Check and compare the names of the objects elements in both fits.
+names(lm_fit)
+```
+
+```{r}
+names(glm_fit)
+```
+
+```{r}
+# Compare the summaries of outputs.
+summary(lm_fit)
+```
+
+```{r}
+summary(glm_fit)
+```
+
+# Compare the Model Objects.
+
+## 1. Coefficients.
+
+```{r}
+# Coefficients
+cbind(LM.coefficients=lm_fit$coefficients,GLM.coefficients=glm_fit$coefficients)
+coefficients<-lm_fit$coefficients
+```
+
+```{r}
+# Comparison:
+sum(abs(lm_fit$coefficients-glm_fit$coefficients)>.00000000001)
+```
+
+## 2. Residuals.
+
+```{r}
+# Residuals
+cbind(LM.residuals=lm_fit$residuals,GLM.residuals=glm_fit$residuals)[1:10,]
+residuals<-lm_fit$residuals
+```
+
+```{r}
+# Comparison:
+sum(abs(lm_fit$residuals-glm_fit$residuals)>.00000000001)
+```
+
+```{r}
+# Matplot check 
+matplot(1:length(Linear_Model_Data[,1]),cbind(lm_fit$residuals,glm_fit$residuals),type="l",ylab="Residuals",xlab="Count")
+```
+
+## 3. Fitted values.
+
+```{r}
+# Fitted values
+cbind(LM.fitted.values=lm_fit$fitted.values,GLM.fitted.values=glm_fit$fitted.values)[1:10,]
+fitted.values<-lm_fit$fitted.values
+```
+
+```{r}
+# Comparison: 
+sum(abs(lm_fit$fitted.values-glm_fit$fitted.values))
+```
+
+## 4. Linear predictors.
+
+```{r}
+# Linear predictors
+cbind(LM.linear.predictors=lm_fit$fitted.values,GLM.linear.predictors=glm_fit$linear.predictors)[1:10,]
+linear.predictors<-lm_fit$fitted.values
+```
+
+```{r}
+# Comparison: 
+sum(abs(lm_fit$fitted.values-glm_fit$linear.predictors))
+```
+
+## 5. Deviance
+
+```{r}
+# Deviance
+c(GLM.deviance=glm_fit$deviance,
+  LM.deviance=sum(lm_fit$residuals^2),
+  Function.Deviance=deviance(lm_fit))
+deviance<-sum(lm_fit$residuals^2)
+```
+
+```{r}
+# Comparison: 
+sum(abs(lm_fit$deviance-glm_fit$deviance))
+```
+
+## 6. Akaike Information Criterion (aic) 
+
+```{r}
+# aic
+cbind(LM.aic=AIC(lm_fit),GLM.aic=glm_fit$aic)
+aic_cal<-glm_fit$aic
+```
+
+```{r}
+# Comparison: 
+sum(abs(AIC(lm_fit)-glm_fit$aic))
+```
+
+```{r}
+# Calculate Log Lokelihood manually
+Manual.Log.Likelihood <- function(Linear.Model.Fit) {
+  n <- 500
+  Sigma.Squared <- sum(Linear.Model.Fit$residuals^2)/n
+  RSS <- sum(Linear.Model.Fit$residuals^2)
+  Log.Likelihood <- -n/2*log(2*pi*Sigma.Squared) - 1/(2*Sigma.Squared)*RSS
+  return(Log.Likelihood)
+}
+```
+
+```{r}
+# Calculate aic
+lm_loglike <- Manual.Log.Likelihood(lm_fit)
+aic <- 2*(lm_fit$rank+1) - 2*lm_loglike
+# Check 
+cbind(LM.aic=AIC(lm_fit),GLM.aic=glm_fit$aic,manual_aic=aic)
+```
+
+```{r}
+# Compare maually calculated aic 
+sum(abs(AIC(lm_fit)-aic))
+```
+
+## 7. Output y.
+
+```{r}
+# y
+y<-Linear_Model_Data[,1]
+```
+
+```{r}
+# Comparison:
+sum(abs(Linear_Model_Data[,1]-glm_fit$y))
+```
+
+## 8. null.deviance
+
+```{r}
+# null.deviance
+lm.null<-lm(Output~1,data=Linear_Model_Data)
+lm.null.SSE<-sum(lm.null$residuals^2)
+c(Null.SSE.lm=lm.null.SSE,Null.Deviance.glm=glm_fit$null.deviance)
+
+# null.deviance<-lm.null.SSE
+null.deviance<-sum(lm.null$residuals^2)
+```
+
+```{r}
+# Comparison
+sum(abs(lm.null.SSE-glm_fit$null.deviance))
+```
+
+## 9. Dispersion.
+
+```{r}
+dispersion<-summary(lm_fit)$sigma^2
+```
+
+```{r}
+res<- list(Linear.Model.Data.lm = lm_fit,
+           coefficients = coefficients,
+           residuals = residuals,
+           fitted.values = fitted.values,
+           linear.predictors = linear.predictors,
+           deviance = deviance,
+           aic = aic,
+           y = y,
+           null.deviance = null.deviance,
+           dispersion = dispersion)
+```
+
+```{r}
+saveRDS(res, file = paste(dataPath,'result.rds',sep = '/'))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

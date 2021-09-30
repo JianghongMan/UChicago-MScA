@@ -1,0 +1,111 @@
+---
+title: "Workshop2"
+author: "Jianghong Man"
+date: "01/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Prepare the Data
+
+
+```{r}
+dataPath <- "/Users/nimo/Desktop/31010/2/Workshop/"
+Norm_Sample_Vector<-read.csv(file=paste(dataPath,
+                                        "sample_for_optimization.csv",
+                                        sep="/"),header=TRUE,sep=",")[,1]
+head(Norm_Sample_Vector)
+
+
+```
+
+```{r}
+var(Norm_Sample_Vector)
+```
+
+```{r}
+Negative_LL_Normal<-function(mu_Sig_parameters,Sample_Vector){
+  mu<-mu_Sig_parameters[1]
+  sigma2<-mu_Sig_parameters[2]
+  n<-nrow(Sample_Vector)
+  logl<-0.5*n*log(2*pi*sigma2) + (1/(2*sigma2))*sum((Sample_Vector-mu)**2)
+  return(logl)
+}
+```
+
+Optimize the negative log-likelihood function using optim()
+
+```{r}
+Neg_Log_Like_optim<-optim(c(7,4),
+                          Negative_LL_Normal,
+                          Sample_Vector=Norm_Sample_Vector,
+                          method="L-BFGS-B",
+                          hessian=TRUE,
+                          lower=c(-Inf,0),
+                          control=list(trace=1))
+```
+
+```{r}
+names(Neg_Log_Like_optim)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+

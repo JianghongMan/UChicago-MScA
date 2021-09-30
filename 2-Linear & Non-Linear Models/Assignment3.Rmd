@@ -1,0 +1,114 @@
+---
+title: "Assignment3"
+author: "Jianghong Man"
+date: "02/04/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Prepare the Data
+
+```{r}
+dataPath <- "/Users/nimo/Desktop/31010/3/Assignment"
+test_data <- read.table(paste(dataPath,'Week3_Test_Sample.csv',sep = '/'), header=TRUE)
+nSample <- nrow(test_data)
+```
+
+```{r}
+library(RNetCDF)
+library(copula)
+library(MASS)
+```
+
+```{r}
+#plot the empirical copula
+xNorm <- (test_data$x_sample -mean(test_data$x_sample))/sd(test_data$x_sample)
+yNorm <- (test_data$y_sample -mean(test_data$y_sample))/sd(test_data$y_sample)
+
+plot(rank(xNorm)/nSample,rank(yNorm)/nSample)
+
+copula.type = 'Gaussian'
+```
+
+```{r}
+#fit copula
+copulaFitData<-cbind(xNorm,yNorm)
+Gaussian_Copula<-normalCopula(param=-.9,dim=2)
+empCopula <- pobs(copulaFitData)
+
+GaussianCopula_data.fit <- fitCopula(Gaussian_Copula, data = empCopula, method = "ml")
+GaussianCopula_data.fit
+```
+
+```{r}
+#parameter
+theta <- GaussianCopula_data.fit@estimate
+theta
+mu = empCopula[,1]
+```
+
+```{r}
+gaussian_cond_dist = function(theta, alpha, u) {
+  pnorm(qnorm(alpha)*sqrt(1-theta**2)+theta*qnorm(u))}
+
+gaussian_quantile <- gaussian_cond_dist(theta, 0.5, empCopula[,1])
+quantile <- as.double(gaussian_quantile)
+#quantile
+```
+
+```{r}
+copula.type = c("Gaussian")
+parameter <- theta
+quantile <- quantile
+```
+
+```{r}
+copula.type
+```
+
+```{r}
+parameter
+```
+
+```{r}
+quantile
+```
+
+```{r}
+
+res <- list(copula.type = copula.type,
+            parameter =parameter, 
+            quantile = quantile)
+
+saveRDS(res, file = paste(dataPath,'result.rds',sep = '/'))
+```
+
+```{r}
+parameter
+```
+
+```{r}
+res
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
