@@ -1,0 +1,734 @@
+/***********************************************
+** File: Assignment2-PartC.sql
+** Desc: Combining Data, Nested Queries, Views and Indexes, Transforming Data
+** Author: Jianghong Man
+** Date: 10/30/2020
+************************************************/
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Initialize libraries
+
+```{r}
+library(RMySQL);
+library(ggplot2);
+library(DBI);
+```
+
+Set up the connection
+
+```{r}
+connection = dbConnect(MySQL(),user="root", password="rootroot", 
+                dbname="sakila", host="localhost")
+```
+
+# QUESTION 1
+
+1a) List the actors (firstName, lastName) who acted in more then 25 movies
+
+Note: Also show the count of movies against each actor
+
+```{r}
+myQuery1a <-
+"
+SELECT 
+    a.first_name, a.last_name, COUNT(*)
+FROM
+    actor a
+        JOIN
+    film_actor f ON a.actor_id = f.actor_id
+GROUP BY a.first_name , a.last_name
+HAVING COUNT(a.first_name) > 25;
+"
+a1 <- dbGetQuery(connection, myQuery1a)
+head(a1,10)
+```
+
+1b) List the actors who have worked in the German language movies
+
+Note: Please execute the below SQL before answering this question.
+
+SET SQL_SAFE_UPDATES=0;
+UPDATE film SET language_id=6 WHERE title LIKE "%ACADEMY%";
+
+```{r}
+myQuery1b1 <-
+"
+SET SQL_SAFE_UPDATES=0;
+"
+dbGetQuery(connection, myQuery1b1)
+```
+
+```{r}
+myQuery1b2 <-
+"
+UPDATE film SET language_id=6 WHERE title LIKE '%ACADEMY%';
+"
+dbGetQuery(connection, myQuery1b2)
+```
+
+```{r}
+myQuery1b3 <-
+"
+SELECT 
+    a.first_name, a.last_name
+FROM
+    actor a
+        JOIN
+    film_actor fa ON a.actor_id = fa.actor_id
+        JOIN
+    film f ON f.film_id = fa.film_id
+        JOIN
+    language l ON f.language_id = l.language_id
+WHERE
+    l.name = 'German';
+"
+b3 <- dbGetQuery(connection, myQuery1b3)
+head(b3,10)
+```
+
+1c) List the actors who acted in horror movies.
+
+Note: Show the count of movies against each actor in the result set.
+
+```{r}
+myQuery1c <-
+"
+SELECT 
+    a.first_name, a.last_name, COUNT(*) 'Number of horror movies'
+FROM
+    actor a
+        JOIN
+    film_actor fa ON a.actor_id = fa.actor_id
+        JOIN
+    film_category fc ON fa.film_id = fc.film_id
+        JOIN
+    category c ON fc.category_id = c.category_id
+WHERE
+    c.name = 'Horror'
+GROUP BY a.first_name , a.last_name;
+"
+c1 <- dbGetQuery(connection, myQuery1c)
+head(c1,10)
+```
+
+1d) List all customers who rented more than 3 horror movies.
+
+```{r}
+myQuery1d <-
+"
+SELECT 
+    b.first_name, b.last_name, a.Horror_movie_rented
+FROM
+    (SELECT 
+        a.customer_id, COUNT(*) 'Horror_movie_rented'
+    FROM
+        (SELECT 
+        r.customer_id, r.rental_id, r.inventory_id, i.film_id
+    FROM
+        rental r
+    JOIN inventory i ON r.inventory_id = i.inventory_id) a
+    JOIN (SELECT 
+        f.film_id, c.name
+    FROM
+        film_category f
+    JOIN category c ON f.category_id = c.category_id) b ON a.film_id = b.film_id
+    WHERE
+        b.name = 'Horror'
+    GROUP BY a.customer_id
+    HAVING Horror_movie_rented > 3) a
+        JOIN
+    customer b ON a.customer_id = b.customer_id;
+"
+d1 <- dbGetQuery(connection, myQuery1d)
+head(d1,10)
+```
+
+1e) List all customers who rented the movie which starred SCARLETT BENING
+
+Assume to list distinct customers because same customers could rent the movie starred SCARLETT BENING several times. 
+
+```{r}
+myQuery1e <-
+"
+SELECT 
+    distinct c.customer_id, c.first_name, c.last_name
+FROM
+    film_actor fa
+        JOIN
+    actor a ON fa.actor_id = a.actor_id
+        JOIN
+    inventory i ON fa.film_id = i.film_id
+        JOIN
+    rental r ON r.inventory_id = i.inventory_id
+        JOIN
+    customer c ON r.customer_id = c.customer_id
+WHERE
+    a.first_name = 'SCARLETT'
+        && a.last_name = 'BENING';
+"
+e1 <- dbGetQuery(connection, myQuery1e)
+head(e1,10)
+```
+
+1f) Which customers residing at postal code 62703 rented movies that were Documentaries.
+
+```{r}
+myQuery1f <-
+"
+SELECT 
+    c.first_name, c.last_name
+FROM
+    customer c
+        JOIN
+    address a ON c.address_id = a.address_id
+        JOIN
+    rental r ON c.customer_id = r.customer_id
+        JOIN
+    inventory i ON r.inventory_id = i.inventory_id
+        JOIN
+    film_category fc ON fc.film_id = i.film_id
+        JOIN
+    category ca ON fc.category_id = ca.category_id
+WHERE
+    ca.name = 'Documentary'
+        AND a.postal_code = '62703';
+"
+dbGetQuery(connection, myQuery1f)
+```
+
+1g) Find all the addresses where the second address line is not empty (i.e., contains some text), and return these second addresses sorted.
+
+```{r}
+myQuery1g <-
+"
+SELECT 
+    address2
+FROM
+    address
+WHERE
+    address2 IS NOT NULL
+ORDER BY address2;
+"
+g1 <- dbGetQuery(connection, myQuery1g)
+head(g1,10)
+```
+
+1h) How many films involve a “Crocodile” and a “Shark” based on film description?
+
+```{r}
+myQuery1h <-
+"
+SELECT 
+    COUNT(*)
+FROM
+    film_text
+WHERE
+    description LIKE '%Crocodile%'
+        AND description LIKE '%Shark%';
+"
+dbGetQuery(connection, myQuery1h)
+```
+
+1i) List the actors who played in a film involving a “Crocodile” and a “Shark”, along with the release year of the movie, sorted by the actors’ last names.
+
+```{r}
+myQuery1i <-
+"
+SELECT 
+    first_name, last_name, release_year
+FROM
+    film f
+        INNER JOIN
+    film_actor fa ON fa.film_id = f.film_id
+        INNER JOIN
+    actor a ON a.actor_id = fa.actor_id
+WHERE
+    description LIKE '%Crocodile%'
+        AND description LIKE '%Shark%'
+GROUP BY first_name , last_name , release_year
+ORDER BY last_name;
+"
+i1 <- dbGetQuery(connection, myQuery1i)
+head(i1,10)
+```
+
+1j) Find all the film categories in which there are between 55 and 65 films. Return the
+names of categories and the number of films per category, sorted from highest to lowest by the number of films.
+
+```{r}
+myQuery1j <-
+"
+SELECT 
+    c.name, COUNT(*) AS count
+FROM
+    category c
+        INNER JOIN
+    film_category f ON c.category_id = f.category_id
+GROUP BY name
+HAVING count BETWEEN 55 AND 65
+ORDER BY count DESC;
+"
+dbGetQuery(connection, myQuery1j)
+```
+
+1k) In which of the film categories is the average difference between the film replacement cost and the rental rate larger than 17$?
+
+```{r}
+myQuery1k <-
+"
+SELECT 
+    c.name, (AVG(f.replacement_cost) - AVG(f.rental_rate)) as avg_diff
+FROM
+    film f
+        INNER JOIN
+    film_category fc ON f.film_id = fc.film_id
+        INNER JOIN
+    category c ON c.category_id = fc.category_id
+GROUP BY fc.category_id
+HAVING (AVG(f.replacement_cost) - AVG(f.rental_rate)) > 17;
+"
+dbGetQuery(connection, myQuery1k)
+```
+
+1l) Many DVD stores produce a daily list of overdue rentals so that customers can be
+contacted and asked to return their overdue DVDs. To create such a list, search the rental table for films with a return date that is NULL and where the rental date is further in the past than the rental duration specified in the film table. If so, the film is overdue and we should produce the name of the film along with the customer name and phone number
+
+Assume the the rental date is calculated by the difference between the last update in the system and the rental date instead of the current date minus the rental date. 
+
+```{r}
+myQuery1l <-
+"
+SELECT 
+    first_name, last_name, phone, title
+FROM
+    customer a
+        JOIN
+    address e ON (a.address_id = e.address_id)
+        JOIN
+    rental b ON (a.customer_id = b.customer_id)
+        JOIN
+    inventory c ON (b.inventory_id = c.inventory_id)
+        JOIN
+    film d ON (c.film_id = d.film_id)
+WHERE
+    return_date IS NULL
+        AND DATEDIFF(CAST(b.last_update AS DATE),
+            CAST(rental_date AS DATE)) > rental_duration;
+"
+dbGetQuery(connection, myQuery1l)
+```
+
+1m) Find the list of all customers and staff given a store id
+
+Note : use a set operator, do not remove duplicates
+
+```{r}
+myQuery1m <-
+"
+SELECT 
+    c.first_name, c.last_name, c.store_id
+FROM
+    customer c 
+UNION ALL SELECT 
+    s.first_name, s.last_name, s.store_id
+FROM
+    staff s
+ORDER BY store_id;
+"
+m1 <- dbGetQuery(connection, myQuery1m)
+head(m1,10)
+```
+
+# QUESTION 2
+
+2a) List actors and customers whose first name is the same as the first name of the actor
+with ID 8.
+
+```{r}
+myQuery2a <-
+"
+SELECT 
+    c.first_name 'customer first name',
+    c.last_name 'customer last name',
+    a.first_name 'actor first name',
+    a.last_name 'actor last name'
+FROM
+    customer c
+        JOIN
+    actor a ON c.first_name = a.first_name
+WHERE
+    a.actor_id = 8;
+"
+dbGetQuery(connection, myQuery2a)
+```
+
+2b) List customers and payment amounts, with payments greater than average the
+payment amount
+
+```{r}
+myQuery2b <-
+"
+SELECT 
+    c.first_name, c.last_name, amount
+FROM
+    customer c
+        JOIN
+    payment p ON c.customer_id = p.customer_id
+WHERE
+    amount > (SELECT 
+            AVG(amount)
+        FROM
+            payment);
+"
+b2 <- dbGetQuery(connection, myQuery2b)
+head(b2,10)
+```
+
+2c) List customers who have rented movies atleast once
+
+Note: use IN clause
+
+```{r}
+myQuery2c <-
+"
+SELECT 
+    c.first_name, c.last_name
+FROM
+    customer c
+WHERE
+    c.customer_id IN (SELECT 
+            customer_id
+        FROM
+            rental);
+"
+c2 <- dbGetQuery(connection, myQuery2c)
+head(c2,10)
+```
+
+
+2d) Find the floor of the maximum, minimum and average payment amount
+
+```{r}
+myQuery2d <-
+"
+SELECT 
+    FLOOR(MAX(amount)), FLOOR(MIN(amount)), FLOOR(AVG(amount))
+FROM
+    payment;
+"
+dbGetQuery(connection, myQuery2d)
+```
+
+# QUESTION 3
+
+3a) Create a view called actors_portfolio which contains information about actors and films ( including titles and category).
+
+```{r}
+myQuery3a1 <-
+"
+ CREATE OR REPLACE VIEW actors_portfolio AS
+        select a.first_name, a.last_name, f.title, c.name
+        from actor a 
+        join film_actor fa ON a.actor_id = fa.actor_id
+        join film f on fa.film_id = f.film_id
+        join film_category fc on fc.film_id = f.film_id
+        join category c ON fc.category_id = c.category_id
+        WITH CHECK OPTION;
+"
+dbGetQuery(connection, myQuery3a1)
+```
+
+```{r}
+myQuery3a2 <-
+"
+SELECT * FROM actors_portfolio;
+"
+a32 <- dbGetQuery(connection, myQuery3a2)
+head(a32,10)
+```
+
+3b) Describe the structure of the view and query the view to get information on the actor
+ADAM GRANT
+
+```{r}
+myQuery3b1 <-
+"
+DESCRIBE actors_portfolio;
+"
+dbGetQuery(connection, myQuery3b1)
+```
+
+```{r}
+myQuery3b2 <-
+"
+SELECT 
+    *
+FROM
+    actors_portfolio
+WHERE
+    first_name = 'ADAM'
+        AND last_name = 'GRANT';
+"
+b32 <- dbGetQuery(connection, myQuery3b2)
+head(b32,10)
+```
+
+3c) Insert a new movie titled Data Hero in Sci-Fi Category starring ADAM GRANT
+
+```{r}
+myQuery3c1 <-
+"
+CREATE Table actors_portfolios AS
+        select a.first_name, a.last_name, f.title, c.name
+        from actor a 
+        join film_actor fa ON a.actor_id = fa.actor_id
+        join film f on fa.film_id = f.film_id
+        join film_category fc on fc.film_id = f.film_id
+        join category c ON fc.category_id = c.category_id
+        ;
+"
+dbGetQuery(connection, myQuery3c1)
+```
+
+```{r}
+myQuery3c2 <-
+"
+CREATE OR REPLACE VIEW actors_portfolio AS 
+SELECT * 
+FROM actors_portfolios with check option;
+"
+dbGetQuery(connection, myQuery3c2)
+```
+
+```{r}
+myQuery3c3 <-
+"
+INSERT INTO actors_portfolio (first_name,last_name,title,name) 
+VALUES ('ADAM','GRANT','DATA HERO','Sci_Fi');
+"
+dbGetQuery(connection, myQuery3c3)
+```
+
+```{r}
+myQuery3c4 <-
+"
+SELECT * FROM actors_portfolio WHERE first_name='ADAM' and last_name='GRANT' and title='DATA HERO';
+"
+dbGetQuery(connection, myQuery3c4)
+```
+
+```{r}
+# myQuery3c0 <-
+# "
+# drop view actors_portfolio
+# "
+# dbGetQuery(connection, myQuery3c0)
+```
+
+```{r}
+# myQuery3c00 <-
+# "
+# drop table actors_portfolios
+# "
+# dbGetQuery(connection, myQuery3c00)
+```
+
+# QUESTION 4
+
+4a) Extract the street number ( characters 1 through 4 ) from customer addressLine1
+
+```{r}
+myQuery4a <-
+"
+SELECT 
+    SUBSTRING_INDEX(address, ' ', 1)
+FROM
+    address
+LIMIT 5;
+"
+dbGetQuery(connection, myQuery4a)
+```
+
+4b) Find out actors whose last name starts with character A, B or C.
+
+```{r}
+myQuery4b <-
+"
+SELECT 
+    first_name, last_name
+FROM
+    actor
+WHERE
+    last_name REGEXP '^(A|B|C)';
+"
+b4 <- dbGetQuery(connection, myQuery4b)
+head(b4,10)
+```
+
+4c) Find film titles that contains exactly 10 characters
+
+```{r}
+myQuery4c <-
+"
+SELECT 
+    title
+FROM
+    film
+WHERE
+    LENGTH(REPLACE(title, ' ', '')) = 10;
+"
+c4 <- dbGetQuery(connection, myQuery4c)
+head(c4,10)
+```
+
+4d) Format a payment_date using the following format e.g "22/1/2016"
+
+```{r}
+myQuery4d <-
+"
+SELECT 
+    DATE_FORMAT(payment_date, '%d/%m/%Y')
+FROM
+    payment;
+"
+d4 <- dbGetQuery(connection, myQuery4d)
+head(d4,10)
+```
+
+4e) Find the number of days between two date values rental_date & return_date
+
+```{r}
+myQuery4e <-
+"
+SELECT 
+    DATEDIFF(return_date, rental_date)
+FROM
+    rental;
+"
+e4 <- dbGetQuery(connection, myQuery4e)
+head(e4,10)
+```
+
+# QUESTION 5
+
+Provide 5 additional queries and indicate the specific business use cases they address.
+
+5a) List each film and the number of actors who are listed for that film.
+
+```{r}
+myQuery5a <-
+"
+SELECT 
+    flm.title, COUNT(*) number_of_actors
+FROM
+    film flm
+        INNER JOIN
+    film_actor fim_act ON flm.film_id = fim_act.film_id
+GROUP BY flm.title
+ORDER BY number_of_actors DESC;
+"
+a5 <- dbGetQuery(connection, myQuery5a)
+head(a5,10)
+```
+
+5b) Display all actors who appear in the film 'QUEEN LUKE'
+
+```{r}
+myQuery5b <-
+"
+SELECT 
+    first_name, last_name
+FROM
+    actor
+WHERE
+    actor_id IN (SELECT 
+            actor_id
+        FROM
+            film_actor
+        WHERE
+            film_id IN (SELECT 
+                    film_id
+                FROM
+                    film
+                WHERE
+                    LOWER(title) = LOWER('QUEEN LUKE')));
+"
+dbGetQuery(connection, myQuery5b)
+```
+
+5c) Identify all movies categorized as Children films in order to target all Children movies for a promotion.
+
+```{r}
+myQuery5c <-
+"
+SELECT 
+    film_id, title, release_year
+FROM
+    film
+WHERE
+    film_id IN (SELECT 
+            film_id
+        FROM
+            film_category
+        WHERE
+            category_id IN (SELECT 
+                    category_id
+                FROM
+                    category
+                WHERE
+                    name = 'Children'));
+"
+c5 <- dbGetQuery(connection, myQuery5c)
+head(c5,10)
+```
+
+5d) List the top five genres in gross revenue in descending order.
+
+```{r}
+myQuery5d <-
+"
+SELECT 
+    cat.name category_name, SUM(IFNULL(pay.amount, 0)) revenue
+FROM
+    category cat
+        JOIN
+    film_category flm_cat ON cat.category_id = flm_cat.category_id
+        JOIN
+    film fil ON flm_cat.film_id = fil.film_id
+        JOIN
+    inventory inv ON fil.film_id = inv.film_id
+        JOIN
+    rental ren ON inv.inventory_id = ren.inventory_id
+        JOIN
+    payment pay ON ren.rental_id = pay.rental_id
+GROUP BY cat.name
+ORDER BY revenue DESC
+LIMIT 5;
+"
+dbGetQuery(connection, myQuery5d)
+```
+
+5e) Display the least frequently rented movies in ascending order.
+
+```{r}
+myQuery5e <-
+"
+SELECT 
+    f.film_id, f.title, A.*
+FROM
+    film f
+        JOIN
+    (SELECT 
+        inv.film_id, COUNT(ren.rental_id) times_rented
+    FROM
+        rental ren
+    JOIN inventory inv ON ren.inventory_id = inv.inventory_id
+    GROUP BY inv.film_id) A ON f.film_id = A.film_id
+ORDER BY A.times_rented;
+"
+e5 <- dbGetQuery(connection, myQuery5e)
+head(e5,10)
+```

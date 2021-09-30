@@ -1,0 +1,621 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+
+/***********************************************
+** File: Assignment2-PartB.sql
+** Desc: Manipulating, Categorizing, Sorting and Grouping & Summarizing Data
+** Author: Jianghong Man
+** Date: 10/30/2020
+************************************************/
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Initialize libraries
+
+```{r}
+library(RMySQL);
+library(ggplot2);
+library(DBI);
+```
+
+Set up the connection
+
+```{r}
+connection = dbConnect(MySQL(),user="root", password="rootroot", 
+                dbname="sakila", host="localhost");
+```
+
+# QUESTION 1
+
+1a) Show the list of databases.
+
+```{r}
+myQuery1a <-
+"show databases;"
+dbGetQuery(connection, myQuery1a)
+```
+
+1b) Select sakila database.
+
+```{r}
+myQuery1b <-
+"USE sakila; "
+dbGetQuery(connection, myQuery1b)
+```
+
+1c) Show all tables in the sakila database.
+
+```{r}
+myQuery1c <- 
+"SHOW FULL TABLES;"
+c1 <- dbGetQuery(connection, myQuery1c)
+head(c1,10)
+```
+
+1d) Show each of the columns along with their data types for the actor table.
+
+```{r}
+myQuery1d <- 
+"show columns from actor;"
+dbGetQuery(connection, myQuery1d)
+```
+
+1e) Show the total number of records in the actor table.
+
+```{r}
+myQuery1e <- 
+"SELECT 
+    COUNT(*)
+FROM
+    actor;"
+dbGetQuery(connection, myQuery1e)
+```
+
+1f) What is the first name and last name of all the actors in the actor table ?
+
+```{r}
+myQuery1f <- 
+"SELECT 
+    first_name, last_name
+FROM
+    actor;"
+f1 <- dbGetQuery(connection, myQuery1f)
+head(f1,10)
+```
+
+1g) Insert your first name and middle initial ( in the last name column ) into the actors table.
+
+```{r}
+myQuery1g <- 
+"
+insert into actor (first_name, last_name)  values ('JIANGHONG','JM');"
+dbGetQuery(connection, myQuery1g)
+```
+
+1h) Update your middle initial with your last name in the actors table.
+
+```{r}
+myQuery1h <- 
+"
+UPDATE actor 
+SET 
+    last_name = 'MAN'
+WHERE
+    actor_id = 201; "
+dbGetQuery(connection, myQuery1h)
+```
+
+1i) Delete the record from the actor table where the first name matches your first name.
+
+Assume that nobody in the database has the same first name as mine.
+
+```{r}
+myQuery1i <- 
+"
+DELETE FROM actor 
+where first_name = 'JIANGHONG';"
+dbGetQuery(connection, myQuery1i)
+```
+
+1j) Create a table payment_type with the following specifications and appropriate data types
+
+```{r}
+myQuery1j <- 
+"
+CREATE TABLE payment_type (     
+    payment_type_id smallint,
+    type varchar(45)            
+);     
+"
+
+dbGetQuery(connection, myQuery1j);
+
+myQuery1j1 <- 
+"
+INSERT INTO payment_type VALUES 
+(1,'Credit Card'),              
+(2,'Cash'),                     
+(3,'Paypal'),                   
+(4,'Cheque');                   
+"
+
+dbGetQuery(connection, myQuery1j1)
+```
+
+1k) Rename table payment_type to payment_types.
+
+```{r}
+myQuery1k <- 
+"ALTER TABLE payment_type
+RENAME TO payment_types;"
+dbGetQuery(connection, myQuery1k)
+```
+
+1l) Drop the table payment_types.
+
+```{r}
+myQuery1l <- 
+"DROP TABLE payment_types;"
+dbGetQuery(connection, myQuery1l)
+```
+
+# QUESTION 2
+
+2a) List all the movies ( title & description ) that are rated PG-13 ?
+
+```{r}
+myQuery2a <- 
+"SELECT 
+    title, description
+FROM
+    film
+WHERE
+    rating = 'PG-13';"
+a2 <- dbGetQuery(connection, myQuery2a)
+head(a2,10)
+```
+
+2b) List all movies that are either PG OR PG-13 using IN operator ?
+
+```{r}
+myQuery2b <- 
+"SELECT 
+    title, description
+FROM
+    film
+WHERE
+    rating IN ('PG' , 'PG-13');"
+b2 <- dbGetQuery(connection, myQuery2b)
+head(b2,10)
+```
+
+2c) Report all payments greater than and equal to 2$ and Less than equal to 7$ ?
+
+Note : write 2 separate queries conditional operator and BETWEEN keyword
+
+1. 
+
+```{r}
+myQuery2c1 <- 
+"SELECT 
+    *
+FROM
+    payment
+WHERE
+    amount >= 2 AND amount <= 7;"
+c21 <- dbGetQuery(connection, myQuery2c1)
+head(c21,10)
+```
+
+2. 
+
+```{r}
+myQuery2c2 <- 
+"SELECT 
+    *
+FROM
+    payment
+WHERE
+    amount BETWEEN 2 AND 7;"
+c22 <- dbGetQuery(connection, myQuery2c2)
+head(c22,10)
+```
+
+2d) List all addresses that have phone number that contain digits 589, start with 140 or end with 589
+
+Note : write 3 different queries
+
+1. 
+
+```{r}
+myQuery2d1 <- 
+"SELECT 
+    *
+FROM
+    address
+WHERE
+    phone LIKE '%589%' or phone LIKE '140%' or phone LIKE '%589';"
+dbGetQuery(connection, myQuery2d1)
+```
+
+```{r}
+myQuery2d2 <- 
+"
+SELECT 
+    *
+FROM
+    address
+WHERE
+    phone REGEXP '589|^140';
+"
+dbGetQuery(connection, myQuery2d2)
+```
+
+```{r}
+myQuery2d3 <- 
+"SELECT 
+    *
+FROM
+    address
+WHERE
+    phone LIKE '%589%' or phone LIKE'140%'"
+dbGetQuery(connection, myQuery2d3)
+```
+
+2e) List all staff members ( first name, last name, email ) whose password is NULL ?
+
+```{r}
+myQuery2e <- 
+"SELECT 
+    first_name, last_name, email
+FROM
+    staff
+WHERE
+    password IS NULL;"
+dbGetQuery(connection, myQuery2e)
+```
+
+2f) Select all films that have title names like ZOO and rental duration greater than or equal to 4
+
+```{r}
+myQuery2f <- 
+"SELECT 
+    *
+FROM
+    film
+WHERE
+    title LIKE '%Zoo%'
+        AND rental_duration >= 4;"
+dbGetQuery(connection, myQuery2f)
+```
+
+2g) What is the cost of renting the movie ACADEMY DINOSAUR for 2 weeks?
+
+Note : use of column alias
+
+```{r}
+myQuery2g <- 
+"SELECT 
+    (rental_duration * 7 * 2 * rental_rate) AS cost
+FROM
+    film
+WHERE
+    title = 'ACADEMY DINOSAUR';"
+dbGetQuery(connection, myQuery2g)
+```
+
+2h) List all unique districts where the customers, staff, and stores are located
+
+Note : check for NOT NULL values 
+
+```{r}
+myQuery2h <- 
+"SELECT DISTINCT
+    a.district
+FROM
+    address AS a,
+    customer AS c,
+    staff AS w,
+    store AS s
+WHERE
+    a.address_id IN (c.address_id , w.address_id, s.address_id);"
+h2 <- dbGetQuery(connection, myQuery2h)
+head(h2,10)
+```
+
+2i) List the top 10 newest customers across all stores 
+
+Assume that "new customers" represents those who are added to the system latest across all stores. In other words, the 'create_data' is the recent for those customers across all stores. 
+
+```{r}
+myQuery2i <- 
+"SELECT 
+    store_id, customer_id, create_date
+FROM
+    customer
+ORDER BY create_date DESC
+LIMIT 10;"
+dbGetQuery(connection, myQuery2i)
+```
+
+# QUESTION 3
+
+3a) Show total number of movies
+
+```{r}
+myQuery3a <- 
+"
+SELECT 
+    COUNT(film_id)
+FROM
+    film;
+"
+dbGetQuery(connection, myQuery3a)
+```
+
+3b) What is the minimum payment received and max payment received across all transactions ?
+
+```{r}
+myQuery3b <- 
+"
+SELECT 
+    MIN(amount), MAX(amount)
+FROM
+    payment;
+"
+dbGetQuery(connection, myQuery3b)
+```
+
+3c) Number of customers that rented movies between Feb-2005 & May-2005 ( based on paymentDate ).
+
+Assume that there might be one customer rented different movies during this priod of time. We only calculate the distinct number of customers.
+
+Also assume that "between Feb-2005 & May-2005" means including the months Feb-2005 and May-2005.
+
+```{r}
+myQuery3c <- 
+"
+SELECT 
+    COUNT(DISTINCT customer_id) AS num
+FROM
+    payment
+WHERE
+    payment_date LIKE '2005-02%'
+        OR payment_date LIKE '2005-03%'
+        OR payment_date LIKE '2005-04%'
+        OR payment_date LIKE '2005-05%';
+"
+dbGetQuery(connection, myQuery3c)
+```
+
+3d) List all movies where replacement_cost is greater than 15$ or rental_duration is between 6 & 10 days
+
+```{r}
+myQuery3d <- 
+"
+SELECT 
+    *
+FROM
+    film
+WHERE
+    replacement_cost > 15
+        OR rental_duration BETWEEN 6 AND 10;
+"
+d3 <- dbGetQuery(connection, myQuery3d)
+head(d3,10)
+```
+
+3e) What is the total amount spent by customers for movies in the year 2005?
+
+```{r}
+myQuery3e <- 
+"
+SELECT 
+    SUM(amount) AS total
+FROM
+    payment
+WHERE
+    payment_date LIKE '2005%';
+"
+dbGetQuery(connection, myQuery3e)
+```
+
+3f) What is the average replacement cost across all movies ?
+
+```{r}
+myQuery3f <- 
+"
+SELECT 
+    AVG(replacement_cost) AS avg_cost
+FROM
+    film;
+"
+dbGetQuery(connection, myQuery3f)
+```
+
+3g) What is the standard deviation of rental rate across all movies ?
+
+```{r}
+myQuery3g <- 
+"
+SELECT 
+    STD(rental_rate) AS std_rate
+FROM
+    film;
+"
+dbGetQuery(connection, myQuery3g)
+```
+
+3h) What is the midrange of the rental duration for all movies? 
+
+```{r}
+myQuery3h <- 
+"
+SELECT 
+    SUM(rental_duration) / COUNT(rental_duration) AS median
+FROM
+    (SELECT 
+        rental_duration
+    FROM
+        film
+    ORDER BY 1
+    LIMIT 500 , 2) AS t;
+"
+dbGetQuery(connection, myQuery3h)
+```
+
+# QUESTION 4
+
+4a) Customers sorted by first Name and last name in ascending order.
+
+```{r}
+myQuery4a <- 
+"
+SELECT 
+    *
+FROM
+    customer
+ORDER BY first_name , last_name ASC; 
+"
+a4 <- dbGetQuery(connection, myQuery4a)
+head(a4,10)
+```
+
+4b) Count of movies that are either G/NC-17/PG-13/PG/R grouped by rating.
+
+```{r}
+myQuery4b <- 
+"
+SELECT 
+    rating, COUNT(film_id)
+FROM
+    film
+WHERE
+    rating IN ('G' , 'NC-17', 'PG-13', 'PG', 'R')
+GROUP BY rating;
+"
+dbGetQuery(connection, myQuery4b)
+```
+
+4c) Number of addresses in each district.
+
+```{r}
+myQuery4c <- 
+"
+SELECT 
+    district, COUNT(address_id)
+FROM
+    address
+GROUP BY district;
+"
+c4 <- dbGetQuery(connection, myQuery4c)
+head(c4,10)
+```
+
+4d) Find the movies where rental rate is greater than 1$ and order result set by descending order.
+
+```{r}
+myQuery4d <- 
+"
+SELECT 
+    film_id, rental_rate
+FROM
+    film
+WHERE
+    rental_rate > 1
+ORDER BY rental_rate DESC;
+"
+d4 <- dbGetQuery(connection, myQuery4d)
+head(d4,10)
+```
+
+4e) Top 2 movies that are rated R with the highest replacement cost?
+
+```{r}
+myQuery4e <- 
+"
+SELECT 
+    film_id, replacement_cost, rating
+FROM
+    film
+WHERE
+    rating = 'R'
+ORDER BY replacement_cost desc 
+LIMIT 2;
+"
+dbGetQuery(connection, myQuery4e)
+```
+
+4f) Find the most frequently occurring (mode) rental rate across products.
+
+```{r}
+myQuery4f <- 
+"
+SELECT 
+    rental_rate AS mode, COUNT(rental_rate) AS count
+FROM
+    film
+GROUP BY rental_rate
+ORDER BY count DESC
+LIMIT 1;
+"
+dbGetQuery(connection, myQuery4f)
+```
+
+4g) Find the top 2 movies with movie length greater than 50 mins and which has commentaries as a special features.
+
+Assume that "has commentaries" means that special_features include "commentaries" but can not only include "commentaries".
+
+```{r}
+myQuery4g <- 
+"
+SELECT 
+    film_id, length, special_features
+FROM
+    film
+WHERE
+    length > 50
+        AND special_features LIKE '%commentaries%'
+ORDER BY length DESC
+LIMIT 2;
+"
+dbGetQuery(connection, myQuery4g)
+```
+
+4h) List the years which has more than 2 movies released. 
+
+```{r}
+myQuery4h <- 
+"
+SELECT 
+    release_year, COUNT(DISTINCT film_id)
+FROM
+    film
+GROUP BY release_year
+HAVING count(*)>2;
+"
+dbGetQuery(connection, myQuery4h)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
