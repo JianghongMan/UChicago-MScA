@@ -1,0 +1,39 @@
+Summary of models:
+
+Since the output we generate is the loan rate, which is not categorical data, we should choose the models which can predict numeric data. Thus, some models such as Logistic Regression and KNN do not fit in this situation. The following 4 models I chose can successfully predict the interest rate but the gradient boost gave me the highest accuracy score and the lowest RMSE. 
+
+Xgboost: 
+* pros: 
+ - No need for scaling, normalizing data
+ - Feature importance can be found out. (Feature importance can be used for feature selection) 
+ - Fast to interpret
+ - Outliers have minimal impact
+* cons:
+ - Sensitive to outliers / dependent on outliers : every classifier is obliged to fix the errors in the predecessors. 
+
+Linear regression: 
+* pros:
+ - Simple to implement 
+ - Easy to interpret the output coefficient
+ - Avoid using dimensionality reduction techniques, regularization (L1 and L2) techniques and cross-validation.
+* cons:
+ - Over-simplifies real-world problems just by assuming a linear relationship among the variables
+ - Susceptible to over-fitting
+
+
+Random Forest:
+* pros:
+ - Have great power to handle large data sets with higher dimensionality
+ - Have methods for balancing errors in data sets where classes are imbalanced.
+* cons:
+ - Do not gives precise continuous nature prediction
+ - In case of regression, it doesn't predict beyond the range in the training data (the first time I run Random Forest, it showed the error of "unable to allocate 20+ Gib for an array..")
+
+Gradient Boost:
+* pros:
+ - Combine the accuracies of each model, using a weighted sum of predictions, to produce a best-fitting or highest-performing model
+ - The speed of the models are valued
+* cons:
+ - same as Xgboost 
+
+Overall: every model I chose cause a little bit overfitting problems. However, I tried my best and use both method in feature engineering process (for instance, I tried to drop the missing rows (15.25%) and to replace with mean for X1 feature in the original data.) I did include some features, which I think those as importance but there might be too many missing values inside. However, by choosing different models, I can reduce the RMSE score to 0.013 / 0.014. 
