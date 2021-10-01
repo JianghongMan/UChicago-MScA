@@ -1,0 +1,172 @@
+---
+title: "ts_final_project"
+author: "Jianghong Man"
+date: "5/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(fpp)
+library(tseries)
+library(ggplot2)
+library(forecast)
+library(TSA)
+library(dplyr) 
+library(zoo)
+```
+
+# 1. Data Overview
+
+### Data exploration (starting from 1898 Dec).
+
+```{r}
+GlobalTemperatures <- read.csv("GlobalTemperatures.csv")
+data19 <- GlobalTemperatures$LandAverageTemperature[1788:3192]
+ts19 <- ts(data19, start = c(1898,12), frequency = 12)
+tsdisplay(ts19)
+```
+
+Since the data is too tight and hard to differenciate, we move to excel and python to do a more explicit group of plots. 
+
+For the exploration purpose, we decide to display the data from 2000 to 2015 to show the basic trend. 
+
+# 2. EDA
+
+### Load data and plot the time series of Land Average Temperature of the most recent 15 years (2000 Jan to 2015 Dec)
+
+```{r}
+data <- GlobalTemperatures$LandAverageTemperature[3001:3192]
+data <- ts(data, start = c(2000, 1), frequency = 12)
+tsdisplay(data)
+```
+
+
+```{r}
+plot(data)
+title(main="Monthly Global Temperatures, in C") 
+```
+
+```{r}
+#Plot airpass data against time
+autoplot(data)+ #Add labels and titles
+    labs(x="Date",
+         y="Global Temperatures",
+         title="Global Temperatures, in C, on Log Scale") + 
+    geom_point(color="blue") + # Show the data points in blue
+    scale_y_log10() # Put y axis on a logarithmic scale
+```
+
+```{r}
+## function to standardize (z-score)
+stand <- function(x) {
+    y <- (x - mean(x,na.rm=TRUE))/sd(x,na.rm=TRUE)
+    return(y)
+}
+
+# Create zoo object for satandardised anomalies:
+stand_data <- zoo(stand(data))
+plot(stand_data,main="",ylab="Standardized Temp (Z)",xlab="Year")
+```
+
+```{r}
+data2006 <- GlobalTemperatures$LandAverageTemperature[3074:3085]
+
+data1986 <- GlobalTemperatures$LandAverageTemperature[2834:2845]
+
+data1886 <- GlobalTemperatures$LandAverageTemperature[1634:1645]
+
+data1786 <- GlobalTemperatures$LandAverageTemperature[434:445]
+
+temp2016 <- ts(c(4.169, 4.451, 6.618, 9.576, 12.338, 14.421, 15.212, 14.795, 13.075, 10.441, 7.281, 4.815), start = c(2016, 1), frequency = 12)
+
+
+data2006 <- ts(data2006, start = c(2006, 1), frequency = 12)
+data1986 <- ts(data1986, start = c(1986, 1), frequency = 12)
+data1886 <- ts(data1876, start = c(1876, 1), frequency = 12)
+
+td <- ts(c(data2006,data1986,data1886,temp2016),frequency = 12)
+tsdisplay(td)
+```
+
+```{r}
+##Seasonal plot of airline passengers data
+ggseasonplot(td,
+            year.labels=TRUE)+
+  scale_y_log10()+ # Put y axis on a logarithmic scale
+  ylab("Global Temperatures")+ # An alternate way to label Y axis
+  ggtitle("Seasonal Plot of Global Temperatures, in C") # Add a title
+```
+
+```{r}
+##Seasonal plot of airline passengers data
+ggseasonplot(data,
+            year.labels=TRUE)+
+  scale_y_log10()+ # Put y axis on a logarithmic scale
+  ylab("Global Temperatures")+ # An alternate way to label Y axis
+  ggtitle("Seasonal Plot of Global Temperatures, in C") # Add a title
+```
+
+```{r}
+plot(decompose(data))
+```
+
+# 3. Hypothesis test
+
+### Test whether the data is stationay. 
+
+```{r}
+kpss.test(data)
+```
+
+### Fit Box-Cox transformation: test whether the data need to stabilize. 
+
+```{r}
+BoxCox.lambda(data)
+```
+
+Transform the data with box-cox (lambda = 1.499917)
+
+```{r}
+lambda <- BoxCox.lambda(data)
+
+data %>% BoxCox(lambda = lambda) 
+```
+
+### One seasonal differencing + one non-seasonal differencing
+
+```{r}
+tsdisplay(diff(diff(data,lag = 12)),main='Monthly Global Temperatures Flow')
+```
+
+### Run hypothesis test to check if it's stationary
+
+```{r}
+kpss.test(diff(diff(data, lag = 12)))
+```
+
+### Check whether there's missing values in the dataset.（missing value)
+
+```{r}
+sum(is.na(data))
+```
+
+# 4. Spectral Analysis
+
+```{r}
+spectrum(data)
+```
+
+```{r}
+periodogram(data)
+```
+
+```{r}
+## Zoom in 
+temp <- periodogram(data,xlim=c(0.083,0.0835))
+```
+
+f = 0.083, this frequency corresponds to a period of 1/0.083 = 12 days. 
